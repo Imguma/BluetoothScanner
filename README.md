@@ -25,11 +25,11 @@
 ***
 
 ### 📲 Demonstration
-##### 기기 검색(10s) -> 연결 시도 -> 연결 성공
+- 기기 검색(10s) -> 연결 시도 -> 연결 성공
 <img width="20%" src="https://github.com/Imguma/BluetoothScanner/assets/43926202/fae0ee20-9ec2-49c7-bb1c-9ff6125025d3"/>
 <img width="20%" src="https://github.com/Imguma/BluetoothScanner/assets/43926202/fe6bd00f-f259-465e-87b2-1794dda50e00"/>
 <img width="20%" src="https://github.com/Imguma/BluetoothScanner/assets/43926202/f6ef660f-2446-42bf-b12a-7b2a3fe6625c"/>
 <br><br>
 
-##### 새로고침(재검색)
+- 새로고침(재검색)
 <img width="20%" src="https://github.com/Imguma/BluetoothScanner/assets/43926202/e4ce1390-adfa-4465-87d2-da7f6f9334a3"/>
