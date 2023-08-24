@@ -1,14 +1,13 @@
 //
 //  BleList.swift
-//  practice_ble
+//  BluetoothScanner
 //
-//  Created by 애니모비 on 2023/08/02.
 //
 
 import SwiftUI
 
 struct BleList: View {
-    @EnvironmentObject var bluetoothViewModel: ViewModel
+    @EnvironmentObject var bluetoothViewModel: BluetoothViewModel
     
     var body: some View {
         NavigationView {
@@ -16,7 +15,7 @@ struct BleList: View {
                 ForEach(bluetoothViewModel.peripheralList.keys.sorted(), id: \.self) { key in
                     if let element = $bluetoothViewModel.peripheralList[key] {
                         NavigationLink {
-                            BleDetail(isConnected: $bluetoothViewModel.isConnect, peripheral: element.unwrap()!)
+                            BleDetail(peripheral: element.unwrap()!)
                         } label: {
                             BleRow(peripheral: element.unwrap()!)
                         }

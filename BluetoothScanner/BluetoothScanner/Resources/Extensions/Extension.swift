@@ -1,8 +1,7 @@
 //
-//  Extensions.swift
-//  practice_ble
+//  Extension.swift
+//  BluetoothScanner
 //
-//  Created by 애니모비 on 2023/08/07.
 //
 
 import Foundation

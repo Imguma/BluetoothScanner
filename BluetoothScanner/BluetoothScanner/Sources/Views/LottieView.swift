@@ -1,8 +1,7 @@
 //
 //  LottieView.swift
-//  practice_ble
+//  BluetoothScanner
 //
-//  Created by 애니모비 on 2023/08/04.
 //
 
 import Lottie
