@@ -1,21 +1,16 @@
 //
 //  Timer.swift
-//  RE100
+//  BluetoothScanner
 //
-//  Created by 애니모비 on 2023/01/30.
 //
 
 import Foundation
 import UIKit
 
-class TimerObj: ObservableObject {
-    // 싱글톤 객체 선언
-    static let shared = TimerObj(timeOut: 10)
-    
+class TimerObj {
     var timer: Timer?
-    
-    var timerCount: Int = 1
     var timeOut: Int
+    var timerCount: Int = 1
     
     init(timeOut: Int) {
         self.timeOut = timeOut
@@ -64,6 +59,5 @@ class TimerObj: ObservableObject {
         timer?.invalidate()
         timer = nil
         timerCount = 1
-        
     }
 }
