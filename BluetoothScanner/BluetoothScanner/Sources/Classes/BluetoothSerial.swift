@@ -1,8 +1,7 @@
 //
 //  BluetoothSerial.swift
-//  BluetoothTestNoStoryboard
+//  BluetoothScanner
 //
-//  Created by 애니모비 on 2022/12/08.
 //
 
 import Foundation
@@ -14,21 +13,21 @@ protocol BluetoothSerialDelegate: AnyObject {
     func serialDidDiscoverPeripheral(peripheral: CBPeripheral, RSSI: NSNumber)
     func serialDidConnectPeripheral(peripheral: CBPeripheral)
     func serialDidDisconnectPeripheral(peripheral: CBPeripheral)
-    func serialDidDiscoverServices(peripheral: CBPeripheral, services: [CBService]?)
-    func serialdidDiscoverCharacteristics(peripheral: CBPeripheral, characteristics: [CBCharacteristic]?)
+    func serialDidDiscoverServices(peripheral: CBPeripheral, service: CBService?)
+    func serialdidDiscoverCharacteristics(peripheral: CBPeripheral, service: CBService?)
     func serialDidReceiveData(_ data: Data)
 }
 
 // 프로토콜에 포함되어 있는 일부 함수를 옵셔널로 설정
 extension BluetoothSerialDelegate {
     func serialDidReceiveData(_ data: Data) {}
-    func serialDidDiscoverServices(peripheral: CBPeripheral, services: [CBService]?) {}
-    func serialdidDiscoverCharacteristics(peripheral: CBPeripheral, characteristics: [CBCharacteristic]?) {}
+    func serialDidDiscoverServices(peripheral: CBPeripheral, service: [CBService]?) {}
+    func serialdidDiscoverCharacteristics(peripheral: CBPeripheral, service: CBService?) {}
 }
 
 // 블루투스 통신을 담당할 시리얼을 클래스
 // CoreBluetooth를 사용하기 위한 프로토콜을 추가해야함
-class BluetoothSerial: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, ObservableObject {
+class BluetoothSerial: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     // BluetoothSerialDelegate 프로토콜에 등록된 메서드를 수행하는 delegate
     var delegate : BluetoothSerialDelegate?
     
@@ -38,10 +37,10 @@ class BluetoothSerial: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate,
     // 현재 연결을 시도하고 있는 블루투스 주변기기를 의미
     var pendingPeripheral : CBPeripheral?
     
-    var timerMananer = TimerObj.shared
+    var timerMananer: TimerObj
     
     // 연결에 성공된 기기를 의미, 기기와 통신을 시작하게되면 이 객체 이용
-    @Published var connectedPeripheral : CBPeripheral?
+    var connectedPeripheral : CBPeripheral?
     
     // 데이터를 주변기기에 보내기 위한 characteristic을 저장하는 변수
     weak var writeCharacteristic: CBCharacteristic?
@@ -49,31 +48,25 @@ class BluetoothSerial: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate,
     // 데이터를 주변기기에 보내는 type 설정, withResponse는 데이터를 보내면 이에 대한 답장이 오는 경우입니다. withoutResponse는 반대로 데이터를 보내도 답장이 오지 않는 경우
     private var writeType: CBCharacteristicWriteType = .withResponse
     
+    var peripheralName: String?
+    
     // Peripheral이 가지고 있는 서비스의 UUID, 거의 모든 HM-10모듈이 기본적으로 갖고있는 FFE0으로 설정. 하나의 기기는 여러개의 serviceUUID를 가질 수도 있음
-//    var serviceUUID: CBUUID = CBUUID(string: "")
+    var serviceUUID: CBUUID?
     
     // characteristicUUID는 serviceUUID에 포함되어있음, 이를 이용하여 데이터를 송수신합니다. FFE0 서비스가 갖고있는 FFE1로 설정하였습니다. 하나의 service는 여러개의 characteristicUUID를 가질 수 있음
-//    var characteristicUUID: CBUUID = CBUUID(string: "")
+    var characteristicUUID: CBUUID?
     
     // 통신이 가능한 상태라면 true 반환
-    var bluetoothIsReady:  Bool  {
+    var bluetoothIsReady: Bool  {
         get {
             return centralManager.state == .poweredOn
         }
     }
     
     var handleData: ((String) -> Void)?
-    
-    //MARK: 함수
-    // serial을 초기화할 떄 호출, 시리얼은 nil될 수 없기 때문에 항상 초기화후 사용해야함
-//    init(serviceUUID: String, characteristicUUID: String) {
-//        self.serviceUUID = CBUUID(string: serviceUUID)
-//        self.characteristicUUID = CBUUID(string: characteristicUUID)
-//        print("🌀Bluetooth init!")
-//    }
-    
-    override init() {
-        super.init()
+
+    init(timerMananer: TimerObj) {
+        self.timerMananer = timerMananer
     }
     
     deinit {
@@ -202,9 +195,9 @@ class BluetoothSerial: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate,
 //        print("")
         
         // 특정 이름를 찾은 경우 연결 시도
-        //        if peripheral.name?.lowercased() == Bluetooth.BLUETOOTH_SERIAL_NAME {
-        //            connectToPeripheral(peripheral)
-        //        }
+        if peripheral.name?.lowercased() == Bluetooth.BLUETOOTH_SERIAL_NAME {
+            connectToPeripheral(peripheral)
+        }
         
         if timerMananer.timer == nil {
             stopScan()
@@ -280,9 +273,10 @@ class BluetoothSerial: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate,
         print("")
 
         guard let services = peripheral.services else { return }
-        delegate?.serialDidDiscoverServices(peripheral: peripheral, services: services)
+//        delegate?.serialDidDiscoverServices(peripheral: peripheral, service: services)
         
         for service in services {
+            delegate?.serialDidDiscoverServices(peripheral: peripheral, service: service)
             // 검색된 모든 service에 대해서 characteristic을 검색합니다. 파라미터를 nil로 설정하면 해당 service의 모든 characteristic을 검색합니다.
             peripheral.discoverCharacteristics([], for: service)
             print(String(describing: service))
@@ -299,7 +293,8 @@ class BluetoothSerial: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate,
         }
         
         guard let characteristics = service.characteristics else { return }
-        delegate?.serialdidDiscoverCharacteristics(peripheral: peripheral, characteristics: characteristics)
+//        delegate?.serialdidDiscoverCharacteristics(peripheral: peripheral, characteristics: characteristics)
+        delegate?.serialdidDiscoverCharacteristics(peripheral: peripheral, service: service)
         
         for characteristic in characteristics {
             // 검색된 모든 characteristic에 대해 characteristicUUID를 한번 더 체크하고, 일치한다면 peripheral을 구독하고 통신을 위한 설정을 완료합니다.
