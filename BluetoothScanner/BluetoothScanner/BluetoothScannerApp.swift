@@ -12,6 +12,7 @@ struct BluetoothScannerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(BluetoothViewModel())
         }
     }
 }
