@@ -1,8 +1,7 @@
 //
 //  Peripheral.swift
-//  practice_ble
+//  BluetoothScanner
 //
-//  Created by 애니모비 on 2023/08/02.
 //
 
 import Foundation
@@ -14,6 +13,5 @@ struct Peripheral: Identifiable {
     var uuid: String
     var name: String
     var rssi: String
-    var services: [CBService]?
-    var characteristics: [CBCharacteristic]?
+    var services: [CBService: [CBCharacteristic]]?
 }
