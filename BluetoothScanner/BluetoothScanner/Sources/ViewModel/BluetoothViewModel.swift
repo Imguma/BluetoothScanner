@@ -1,17 +1,15 @@
 //
-//  Model.swift
-//  practice_ble
+//  BluetoothViewModel.swift
+//  BluetoothScanner
 //
-//  Created by 애니모비 on 2023/08/02.
 //
 
 import Foundation
 import CoreBluetooth
 
-final class ViewModel: ObservableObject, BluetoothSerialDelegate {
+final class BluetoothViewModel: ObservableObject {
     private var serial: BluetoothSerial
     @Published var peripheralList: [String: Peripheral] = [:]
-//    var newPeripheralList: [String: Peripheral] = [:]
     @Published var isConnect: Bool = false
 
     var centralIsScanning: Bool {
@@ -19,19 +17,28 @@ final class ViewModel: ObservableObject, BluetoothSerialDelegate {
             return serial.centralManager.isScanning
         }
     }
-    
-    init(serial: BluetoothSerial = BluetoothSerial()) {
+
+    init(serial: BluetoothSerial = BluetoothSerial(timerMananer: TimerObj(timeOut: Bluetooth.BLUETOOTH_SCAN_TIME))) {
         self.serial = serial
         serial.delegate = self
     }
 
+    func setTarget(target: Target) {
+        guard let name = target.name else { return }
+        guard let serviceUUID = target.serviceUUID else { return }
+        guard let characteristicUUID = target.characteristicUUID else { return }
+        
+        serial.peripheralName = name
+        serial.serviceUUID = CBUUID(string: serviceUUID)
+        serial.characteristicUUID = CBUUID(string: characteristicUUID)
+    }
+    
     func checkPermission() {
         serial.checkPermission()
     }
     
     func startScan() {
         serial.startScan()
-//        newPeripheralList = [:]
     }
     
     func stopScan() {
@@ -44,17 +51,15 @@ final class ViewModel: ObservableObject, BluetoothSerialDelegate {
     
     func disConnectToPeripheral(_ peripheral: CBPeripheral) {
         serial.disConnectToPeripheral(peripheral)
+        isConnect = false
     }
-    
+}
+
+extension BluetoothViewModel: BluetoothSerialDelegate {
     func serialDidDiscoverPeripheral(peripheral: CBPeripheral, RSSI: NSNumber) {
         let discoverdPeripheral = Peripheral(peripheral: peripheral, uuid: String(peripheral.identifier.uuidString), name: String(peripheral.name ?? "unknown device"), rssi: String(RSSI.intValue))
 
-        let upsert = peripheralList.updateValue(discoverdPeripheral, forKey: String(peripheral.identifier.uuidString))
-        
-        // 새로운 값이 추가되면 nil 반환, 기존 값 update의 경우 optional 리턴
-//        if upsert == nil {
-//            newPeripheralList.updateValue(discoverdPeripheral, forKey: peripheral.identifier.uuidString)
-//        }
+        peripheralList.updateValue(discoverdPeripheral, forKey: String(peripheral.identifier.uuidString))
         
         peripheralList
             .filter {
@@ -64,7 +69,6 @@ final class ViewModel: ObservableObject, BluetoothSerialDelegate {
             .forEach {
                 peripheralList[$0]?.peripheral = peripheral
             }
-    
     }
     
     func serialDidConnectPeripheral(peripheral: CBPeripheral) {
@@ -76,11 +80,14 @@ final class ViewModel: ObservableObject, BluetoothSerialDelegate {
         
     }
     
-    func serialDidDiscoverServices(peripheral: CBPeripheral, services: [CBService]?) {
-        peripheralList[peripheral.identifier.uuidString]?.services = services
+    func serialDidDiscoverServices(peripheral: CBPeripheral, service: CBService?) {
+        peripheralList[peripheral.identifier.uuidString]?.services = [:]
     }
     
-    func serialdidDiscoverCharacteristics(peripheral: CBPeripheral, characteristics: [CBCharacteristic]?) {
-        peripheralList[peripheral.identifier.uuidString]?.characteristics = characteristics
+    func serialdidDiscoverCharacteristics(peripheral: CBPeripheral, service: CBService?) {
+        guard let unwrapService = service else { return }
+        guard let unwrapCharacteristics = service?.characteristics else { return }
+        
+        peripheralList[peripheral.identifier.uuidString]?.services?.updateValue(unwrapCharacteristics, forKey: unwrapService)
     }
 }
